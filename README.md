@@ -1,3 +1,21 @@
+### why did i fork this?
+i hate wxwidgets, but i love the cli, and psxcombine.
+
+
+this fork effectively gets rid of all gui elements and therefore wxwidgets 
+
+
+i know that it may not be perfect, but that's okay.
+
+
+### changed files
+
+- main.cpp
+- Makefile
+
+
+# == ORIGINAL README ==
+
 ﻿# psx-comBINe V5!!
 ![logo](/images/psx-comBINe.jpg?raw=true)
 
