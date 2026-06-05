@@ -1,4 +1,8 @@
 /*******************************************************************************
+*
+* NOTE: THIS IS A FORK BY ConzZah, IT GETS RID OF ALL GUI ELEMENTS,
+* BECAUSE I DESPISE WXWIDGETS, IT'S A PAIN IN THE AAH
+*
 * This file is part of psx-comBINe.
 * Please see the github: https://github.com/ADBeta/psx-comBINe
 * This and all other files relating to psx-conBINe are under the GPLv2.0 License
@@ -7,6 +11,9 @@
 * file, and modified the .cue file indexing
 *
 * ADBeta (c)	Ver 5.2.2    18 Dec 2024
+*
+* ConzZah (c) (CLI FORK) 	 2026-06-05
+*
 *******************************************************************************/
 #include <filesystem>
 #include <algorithm>
@@ -20,39 +27,25 @@
 #include "clampp.hpp"
 #include "utils.hpp"
 
-/*** wx-widgets guff *********************************************************/
-// Disable all the warnings JUST for wx-widgets
-// Editor note: fix your shit wx. That many warnings is a joke
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wall"
-#pragma GCC diagnostic ignored "-Wextra"
-#pragma GCC diagnostic ignored "-Wsign-conversion"
-#pragma GCC diagnostic ignored "-Wconversion"
-////
-#include <wx/wx.h>
-////
-#pragma GCC diagnostic pop
-
 /*** Globals *****************************************************************/
 //Define how large the RAM byte array while dumping should be. (4KB)
 #define _BINARY_ARRAY_SIZE 4096
 
 namespace message {
-const char *copyright = "\npsx-comBINe v4.9.3 01 Jan 2024 ADBeta(c)";
+const char *copyright = "\npsx-comBINe-cli v5.2.2 (fork) ORIGINAL CODE BY: ADBeta(c)\n\n(forked on 2026-06-05 by ConzZah to get rid of wxwidgets)\n";
 
 const char *short_help =
-"Usage: psx-combine [input.cue or directory] [options]\n\
+"Usage: psx-combine-cli [input.cue or directory] [options]\n\
 use --help for full help information\n";
 
 const char *long_help =
-"Usage: psx-combine [input.cue or directory] [options]\n\n\
+"\nUsage: psx-combine-cli [input.cue or directory] [options]\n\n\
 By default psx-comBINe takes a single input.cue file, creates a directory in\n\
 the .cue's parent directory called \"psx-comBINe\".\n\
 it will then output the combined .bin and .cue file, leaving the original \n\
 files untouched.\n\n\
 Options:\n\
 -h, --help\t\tShow this help message\n\
--g, --gui\t\tStarts the Application in GUI Mode (Default with no arguments)\n\
 -v, --verbose\t\tPrint a verbose CUE sheet diagnostics before dumping\n\
 -d, --directory\t\tChange the output directory\n\
 \t\t\tpsx-combine ./input.cue -d /home/user/games\n\n\
@@ -72,7 +65,6 @@ const char *filename_bad_extension = "filename extension must be .cue";
 const char *input_bin_not_open = "The input file could not be opened";
 const char *output_bin_create_failed = "Output binary file could not be created";
 
-const char *wx_failure = "WxWidgets Failed to Initialise Correctly";
 } //namespace message
 
 
@@ -82,11 +74,10 @@ struct ClamppArguments {
 	int help_idx;	   // Help flag
 	int dir_idx;		// Directory flag
 	int file_idx;	   // File flag
-	int gui_idx;		// GUI Mode flag
 	int verbose_idx;	// Verbose flag
 };
 
-// System control variables, Set via CLI or GUI events
+// System control variables, Set via CLI events
 struct SystemVariables {
 	FilesystemType input_fstype, output_fstype;			// Filsesystem type
 	std::filesystem::path input_dir_path, output_dir_path; // Directory paths
@@ -95,53 +86,8 @@ struct SystemVariables {
 	CueSheet input_cue_sheet, output_cue_sheet;			// Cue Sheet Objects
 
 	bool verbose;
-	bool gui;
 };
 
-// GUI Application Object
-class MainApp : public wxApp {
-	public:
-	virtual bool OnInit();
-};
-
-// GUI Frame Objects
-class MainFrame : public wxFrame {
-	public:
-	MainFrame();
-
-	// Define the UI elements used on this frame
-	wxStaticBoxSizer	*CueSelBox;
-	wxButton			*CueSelBtn;
-	wxStaticText		*CueSelTxt;
-
-	wxStaticBoxSizer	*DirSelBox;
-	wxButton			*DirSelBtn;
-	wxStaticText		*DirSelTxt;
-
-	wxButton			*CombineBtn;
-	wxButton			*AboutBtn;
-	wxButton			*QuitBtn;
-
-	// Define the funtions and events used on this frame
-	void OnSelectCue(wxCommandEvent &event);
-	void OnSelectDir(wxCommandEvent &event);
-	void OnCombine(wxCommandEvent &event);
-	void OnAbout(wxCommandEvent &event);
-	void OnExit(wxCommandEvent &event);
-};
-
-// Enumerate GUI event IDs
-enum {
-	ID_CueSelBtn,
-	ID_CueSelTxt,
-
-	ID_DirSelBtn,
-	ID_DirSelTxt,
-
-	ID_CombineBtn,
-	ID_AboutBtn,
-	ID_QuitBtn,
-};
 
 /***  Forward Declarations *****************************************************/
 /// @breif Gets the System Variables from CLI Arguements
@@ -152,14 +98,14 @@ void CLIGetVars(ClamppClass &cli_handler, ClamppArguments &cli_args,
 				SystemVariables &system_vars);
 
 /// @breif Combines the fields in the input cue into one, for the output file
-/// @param &system_vars System Variables from GUI or CLI
+/// @param &system_vars System Variables from CLI
 /// @return none
 void CombineCue(SystemVariables &system_vars);
 
 /// @breiif Goes through the input .cue file, combining all .bin files within
 /// into a single output .bin file
-/// @param &system_vars System Variables from GUI or CLI
-/// @return status string for CLI or GUI printing
+/// @param &system_vars System Variables from CLI
+/// @return status string for CLI printing
 std::string DumpBinaryFiles(SystemVariables &system_vars);
 
 
@@ -167,9 +113,6 @@ std::string DumpBinaryFiles(SystemVariables &system_vars);
 SystemVariables sys_vars;
 
 /*** Main *********************************************************************/
-// Set wx to use a user-defined main() function
-DECLARE_APP(MainApp)
-wxIMPLEMENT_APP_NO_MAIN(MainApp);
 
 int main(const int argc, const char *argv[]) {
 	// clampp Argument handler object
@@ -180,7 +123,6 @@ int main(const int argc, const char *argv[]) {
 	cli_args.help_idx	= cli_handler.AddDefinition("--help", "-h", false);
 	cli_args.dir_idx	 = cli_handler.AddDefinition("--directory", "-d", true);
 	cli_args.file_idx	= cli_handler.AddDefinition("--filename", "-f", true);
-	cli_args.gui_idx	 = cli_handler.AddDefinition("--gui", "-g", false);
 	cli_args.verbose_idx = cli_handler.AddDefinition("--verbose", "-v", false);
 
 
@@ -188,11 +130,6 @@ int main(const int argc, const char *argv[]) {
 	// Scan the arguments
 	ClamppConfig::allow_undefined_args = true;
 	int scan_ret = cli_handler.ScanArgs(argc - 1, argv + 1);
-
-	// If no arguments were passed, default to GUI Mode
-	if(scan_ret == CLAMPP_ENOARGS) {
-		sys_vars.gui = true;
-	}
 
 	// If no substring was given when expected, error
 	if(scan_ret == CLAMPP_ENOSUBSTR) {
@@ -207,32 +144,8 @@ int main(const int argc, const char *argv[]) {
 		exit(EXIT_SUCCESS);
 	}
 
-	// If GUI was selected, set the flag
-	if(cli_handler.GetDetectedStatus(cli_args.gui_idx)) {
-		sys_vars.gui = true;
-	}
-
-
-	// GUI Mode code
-	if(sys_vars.gui) {
-		// Initialize wxWidgets
-		wxDISABLE_DEBUG_SUPPORT();
-		wxApp::SetInstance(wxCreateApp());
-		wxEntryStart(const_cast<int&>(argc), const_cast<char**>(argv));
-		if(!wxTheApp->CallOnInit()) {
-			std::cerr << message::wx_failure << std::endl;
-			exit(EXIT_FAILURE);
-		}
-
-		// Start the wxWidgets main loop
-		wxTheApp->OnRun();
-
-		// Clean up wxWidgets
-		wxTheApp->OnExit();
-		wxEntryCleanup();
-
 	// CLI Mode
-	} else {
+	{
 		// Get the CLI Arguments
 		CLIGetVars(cli_handler, cli_args, sys_vars);
 		// Combine the .cue file variables
@@ -244,279 +157,6 @@ int main(const int argc, const char *argv[]) {
 
 	return 0;
 }
-
-
-
-
-/*** GUI Functions ***********************************************************/
-bool MainApp::OnInit() {
-	// Create a new frame, show it, set size and finish
-	MainFrame *frame = new MainFrame();
-	frame->Show(true);
-	frame->SetMinSize(wxSize(550, 350));
-
-	// Set background colour to pure white
-	// NOTE: Only in Windows Mode
-#ifdef __WXMSW__
-	frame->SetBackgroundColour(wxColour(255, 255, 255));
-#endif
-
-	// Make sure frame's client area (child controls) is also colored
-    frame->ClearBackground();
-	return true;
-}
-
-
-MainFrame::MainFrame() : wxFrame(NULL, wxID_ANY, "psx-comBINe") {
-	// Create a Status Bar
-	CreateStatusBar();
-	SetStatusText("Waiting for File Selection");
-
-
-
-	/* Input Cue Selection */
-	// Create a box for the input .cue selection UI
-	CueSelBox = new wxStaticBoxSizer(
-		wxHORIZONTAL,
-		this,
-		_T("Select .cue File")
-	);
-
-	// .cue Selection Button
-	CueSelBtn = new wxButton(
-		this,
-		ID_CueSelBtn, _T("Select"),
-		wxDefaultPosition,
-		wxSize(100, 30)
-	);
-
-	// Seleced .cue Filename Text
-	CueSelTxt = new wxStaticText(
-		this,
-		ID_CueSelTxt,
-		_T("Select a File..."),
-		wxDefaultPosition,
-		wxSize(-1, 40),
-		wxST_ELLIPSIZE_START
-	);
-
-	// Add the Button and Text to the Cue Box
-	CueSelBox->Add(CueSelBtn, wxSizerFlags().Border(wxALL, 5).Left());
-	CueSelBox->Add(CueSelTxt, wxSizerFlags().Border(wxALL, 5).Left());
-
-
-
-	/* Output Directory Selection */
-	// Create a box for the cue selection UI
-	DirSelBox = new wxStaticBoxSizer(
-		wxHORIZONTAL,
-		this,
-		_T("Select Output Directory (Optional)")
-	);
-
-	// Output Directory Selection Button
-	DirSelBtn = new wxButton(
-		this,
-		ID_DirSelBtn,
-		_T("Select"),
-		wxDefaultPosition,
-		wxSize(100, 30)
-	);
-
-	// Selected output directory text
-	DirSelTxt = new wxStaticText(
-		this,
-		ID_DirSelTxt,
-		_T("..."),
-		wxDefaultPosition,
-		wxSize(-1, 40),
-		wxST_ELLIPSIZE_START
-	);
-	DirSelBtn->Enable(false);
-
-	// Add the button and text to the output box
-	DirSelBox->Add(DirSelBtn, wxSizerFlags().Border(wxALL, 5).Left());
-	DirSelBox->Add(DirSelTxt, wxSizerFlags().Border(wxALL, 5).Left());
-
-
-
-	// Create a Combine Button
-	CombineBtn = new wxButton(
-		this,
-		ID_CombineBtn,
-		_T("Combine")
-	);
-	CombineBtn->Enable(false);
-
-	// Create an About and Quit Button in a seperate box
-	wxBoxSizer *buttonSizer = new wxBoxSizer(wxHORIZONTAL);
-	AboutBtn = new wxButton(this, ID_AboutBtn, _T("About"));
-	QuitBtn  = new wxButton(this, ID_QuitBtn,  _T("Quit"));
-	buttonSizer->Add(AboutBtn, 0, wxALL, 5);
-	buttonSizer->Add(QuitBtn, 0, wxALL, 5);
-
-
-
-	/* UI Layout */
-	// Define a box sizer then add the UI Elements to it.
-	wxBoxSizer *uiSizerBox = new wxBoxSizer(wxVERTICAL);
-
-	// Add the Cue and Dir UI Boxes
-	uiSizerBox->Add(CueSelBox, 0, wxEXPAND | wxALL, 10);
-	uiSizerBox->Add(DirSelBox, 0, wxEXPAND | wxALL, 10);
-
-	// Add the Combine button
-	uiSizerBox->Add(CombineBtn, 0, wxEXPAND | wxALL, 10);
-
-	// Add the About and Quit buttons to the bottom right of the window
-	uiSizerBox->Add(buttonSizer, 0, wxALIGN_RIGHT | wxALL, 10);
-
-	// Set the main sizer to the uiGrid
-	SetSizer(uiSizerBox);
-	Layout();
-
-
-
-	/* UI Element Event Bindings */
-	// Cue and Directory Selection Events
-	Bind(wxEVT_BUTTON, &MainFrame::OnSelectCue, this, ID_CueSelBtn);
-	Bind(wxEVT_BUTTON, &MainFrame::OnSelectDir, this, ID_DirSelBtn);
-	Bind(wxEVT_BUTTON, &MainFrame::OnCombine,   this, ID_CombineBtn);
-
-	// Aditional UI Events
-	Bind(wxEVT_BUTTON, &MainFrame::OnAbout,		this, ID_AboutBtn);
-	Bind(wxEVT_BUTTON, &MainFrame::OnExit,		this, ID_QuitBtn);
-}
-
-
-void MainFrame::OnExit(wxCommandEvent& WXUNUSED(event)) {
-	// Exit the program
-	Close(true);
-}
-
-
-void MainFrame::OnAbout(wxCommandEvent& WXUNUSED(event)) {
-	// Create the About dialog
-	wxDialog aboutDlg(
-		this,
-		wxID_ANY,
-		_T("About psxComBINe"),
-		wxDefaultPosition,
-		wxSize(400, 200)
-	);
-
-	// Create a static text control
-	wxStaticText* aboutText = new wxStaticText(
-		&aboutDlg,
-		wxID_ANY,
-		"psx-comBINe Version 5\n"
-		"Combines PSX Multi-BIN (.bin/.cue) Games\n"
-		"(c) ADBeta 2024\n\n"
-		"https://github.com/ADBeta/psx-comBINe",
-		wxDefaultPosition,
-		wxDefaultSize,
-		wxALIGN_CENTRE
-	);
-
-	// Create an OK button
-	wxButton* okButton = new wxButton(&aboutDlg, wxID_OK, _T("OK"));
-
-	// Create a box sizer with vertical orientation and add the UI to it
-	wxBoxSizer* sizer = new wxBoxSizer(wxVERTICAL);
-	sizer->Add(aboutText, 1, wxALL | wxALIGN_CENTER_HORIZONTAL | wxALIGN_CENTER_VERTICAL, 10);
-	sizer->Add(okButton, 0, wxALL | wxALIGN_CENTER_HORIZONTAL, 10);
-	aboutDlg.SetSizerAndFit(sizer);
-
-	// Center the dialog on screen
-	aboutDlg.Centre();
-	// Show the dialog modally
-	aboutDlg.ShowModal();
-}
-
-
-void MainFrame::OnSelectCue(wxCommandEvent& WXUNUSED(event)) {
-	// Open a File Select Dialog, allowing only .cue files
-	wxFileDialog cueFileDialog(
-		this,
-		_T("Open Cue file"),
-		"",
-		"",
-		"CUE files (*.cue)|*.cue",
-		wxFD_OPEN|wxFD_FILE_MUST_EXIST
-	);
-
-	// If the user closes the dialog, exit the event
-	if(cueFileDialog.ShowModal() == wxID_CANCEL) return;
-
-	std::string cueFilepath = static_cast<std::string>(cueFileDialog.GetPath());
-
-	// Set the System Variables String from the selected file
-	// Input .cue and directory
-	sys_vars.input_cue_path = cueFilepath;
-	sys_vars.input_dir_path = sys_vars.input_cue_path.parent_path() / "";
-	// Set the Default Output Directory
-	sys_vars.output_dir_path = sys_vars.input_dir_path / "psx-comBINe" / "";
-	// Set the output cue and bin file paths
-	sys_vars.output_cue_path = sys_vars.output_dir_path / sys_vars.input_cue_path.filename();
-	(sys_vars.output_bin_path = sys_vars.output_cue_path).replace_extension("bin");
-
-	// Set the Cue and Dir text box strings
-	this->CueSelTxt->SetLabel(sys_vars.input_cue_path.string());
-	this->DirSelTxt->SetLabel(sys_vars.output_dir_path.string());
-
-	// Enable the DirSelBtn and CombineBtn
-	this->DirSelBtn->Enable(true);
-	this->CombineBtn->Enable(true);
-
-	// Update the layout for both selection boxes
-	this->CueSelBox->Layout();
-	this->DirSelBox->Layout();
-
-	this->SetStatusText("Input .cue file selected");
-}
-
-
-void MainFrame::OnSelectDir(wxCommandEvent& WXUNUSED(event)) {
-	// Open a Directory Selection Menu
-	wxDirDialog dirDialog(
-		this,
-		_T("Select Output Director"),
-		"",
-		wxDD_DEFAULT_STYLE | wxDD_DIR_MUST_EXIST
-	);
-
-	// If the user closes the dialog, exit the event
-	if(dirDialog.ShowModal() == wxID_CANCEL) return;
-
-	std::string dirpath = static_cast<std::string>(dirDialog.GetPath());
-	// Set the SystemVariables from the user selection
-	sys_vars.output_dir_path = static_cast<std::filesystem::path>(dirpath) / "";
-	// Set the output cue and bin file paths
-	sys_vars.output_cue_path = sys_vars.output_dir_path / sys_vars.input_cue_path.filename();
-	(sys_vars.output_bin_path = sys_vars.output_cue_path).replace_extension("bin");
-
-	this->DirSelTxt->SetLabel(sys_vars.output_dir_path.string());
-	this->DirSelBox->Layout();
-
-	this->SetStatusText("Changed Output Directory");
-}
-
-
-void MainFrame::OnCombine(wxCommandEvent& WXUNUSED(event)) {
-    // make user aware action is being taken
-    this->SetStatusText("Combining....");
-    this->CombineBtn->Enable(false);
-
-	// Combine the input cue FILEs into one FILE
-	CombineCue(sys_vars);
-	// Dump the .cue binary files into one output file
-	std::string sta_str = DumpBinaryFiles(sys_vars);
-
-	// Set the stauts bar text and re-enable button
-    this->CombineBtn->Enable(true);
-	this->SetStatusText(static_cast<wxString>(sta_str));
-}
-
 
 
 /*** Util Functions **********************************************************/

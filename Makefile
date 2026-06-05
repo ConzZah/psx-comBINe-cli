@@ -9,9 +9,9 @@ WIN32_OBJ_DIR := obj/win32
 WIN64_OBJ_DIR := obj/win64
 
 # Target binaries
-LINUX_BIN := $(BIN_DIR)/linux/psx-combine
-WIN32_BIN := $(BIN_DIR)/win32/psx-combine.exe
-WIN64_BIN := $(BIN_DIR)/win64/psx-combine.exe
+LINUX_BIN := $(BIN_DIR)/linux/psx-combine-cli
+WIN32_BIN := $(BIN_DIR)/win32/psx-combine-cli.exe
+WIN64_BIN := $(BIN_DIR)/win64/psx-combine-cli.exe
 
 # Source files
 SRCS := $(wildcard $(SRC_DIR)/*.cpp)
@@ -33,8 +33,7 @@ WIN64_WR := x86_64-w64-mingw32-windres
 
 ###
 # Linux Compile and Linker Flags
-LINUX_CFLAGS    := -I$(INC_DIR) -O2 -Wall -std=c++17 $(shell wx-config --cxxflags)
-LINUX_LDLIBS    := -lm $(shell wx-config --libs)
+LINUX_CFLAGS    := -I$(INC_DIR) -O2 -Wall -std=c++17
 
 
 ###
@@ -44,15 +43,6 @@ WIN_RC_FILE := $(SRC_DIR)/resources.rc
 WIN32_RC    := $(WIN32_OBJ_DIR)/resources.o
 WIN64_RC    := $(WIN64_OBJ_DIR)/resources.o
 
-# Windows WxWidgets Paths --- Change if needed
-WIN64_WXCONFIG := /opt/wxwidgets-win64/bin/wx-config
-
-
-
-# Windows 64-bit wxWidgets Compiler/Linker/windres flags
-WIN64_CFLAGS := -I$(INC_DIR) -O2 -Wall -static-libgcc -static-libstdc++ $(shell $(WIN64_WXCONFIG) --cxxflags) -DUNICODE -D_UNICODE
-WIN64_LDLIBS := -lm -static $(shell $(WIN64_WXCONFIG) --libs)
-WIN64_RCFLAG := $(shell $(WIN64_WXCONFIG) --cxxflags) # Can be --rcflags on some systems
 
 # Phony targets
 .PHONY: all linux win32 win64 clean
@@ -70,11 +60,6 @@ $(LINUX_OBJ_DIR)/%.o: $(SRC_DIR)/%.cpp | $(LINUX_OBJ_DIR)
 	$(LINUX_CC) $(LINUX_CFLAGS) -c $< -o $@
 
 
-
-
-
-
-
 # Windows 64-bit build
 win64: $(WIN64_BIN)
 
@@ -89,8 +74,6 @@ $(WIN64_RC): $(WIN_RC_FILE) | $(WIN64_OBJ_DIR)
 
 
 
-
-
 # Create directories
 $(BIN_DIR)/linux $(BIN_DIR)/win32 $(BIN_DIR)/win64:
 	mkdir -p $@
@@ -100,4 +83,3 @@ $(LINUX_OBJ_DIR) $(WIN32_OBJ_DIR) $(WIN64_OBJ_DIR):
 
 clean:
 	rm -rf $(BIN_DIR) $(OBJ_DIR)
-
