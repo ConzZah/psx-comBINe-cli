@@ -2,7 +2,7 @@
 i hate wxwidgets, but i love the cli, and psxcombine.
 
 
-this fork effectively gets rid of all gui elements and therefore wxwidgets 
+this fork effectively gets rid of all gui elements and therefore can build fine without wxwidgets
 
 
 i know that it may not be perfect, but that's okay.
@@ -14,9 +14,11 @@ i know that it may not be perfect, but that's okay.
 - Makefile
 
 
-# == ORIGINAL README ==
+## ORIGINAL README
+
 
 ﻿# psx-comBINe V5!!
+
 ![logo](/images/psx-comBINe.jpg?raw=true)
 
 ## What's new?
